@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contribution Fund</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        main {
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .input-section {
+            margin-bottom: 1.5rem;
+        }
+        .input-section label {
+            font-size: 1.2rem;
+        }
+        .input-section input {
+            padding: 0.5rem;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .button {
+            padding: 0.8rem 1.5rem;
+            background-color: #28a745;
+            color: white;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #218838;
+        }
+        .status {
+            margin-top: 1.5rem;
+            font-size: 1.2rem;
+        }
+        #contribution-status {
+            font-weight: bold;
+        }
+        .contributor-list {
+            margin-top: 2rem;
+        }
+        .contributor-item {
+            font-size: 1.1rem;
+        }
+        canvas {
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Contribution Fund</h1>
+        <p>Contribute to the goal of ₵80,000</p>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="input-section">
+                <label for="contributor-name">Enter Your Name:</label>
+                <input type="text" id="contributor-name" placeholder="Your name">
+
+                <label for="contribution-amount">Enter Amount to Contribute (₵):</label>
+                <input type="number" id="contribution-amount" placeholder="Enter amount">
+                <button class="button" onclick="submitContribution()">Submit Contribution</button>
+            </div>
+
+            <div class="status">
+                <p>Total Contributions: ₵<span id="contribution-status">0</span></p>
+            </div>
+
+            <div class="contributor-list">
+                <h3>Contributors:</h3>
+                <ul id="contributors">
+                    <!-- List of contributors will appear here -->
+                </ul>
+            </div>
+
+            <canvas id="contribution-chart" width="400" height="400"></canvas>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const goalAmount = 80000;
+        let totalContributed = 0;
+        let contributors = [];
+        let contributorColors = [];
+
+        const ctx = document.getElementById('contribution-chart').getContext('2d');
+        const contributionChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Remaining Fund'],
+                datasets: [{
+                    data: [goalAmount],
+                    backgroundColor: ['#d3d3d3'],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                const dataset = tooltipItem.chart.data.datasets[tooltipItem.datasetIndex];
+                                const currentValue = dataset.data[tooltipItem.index];
+                                const percentage = (currentValue / totalContributed) * 100;
+                                return `${currentValue}₵ (${percentage.toFixed(2)}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        function generateUniqueColor() {
+            // Using HSL for generating visually distinct colors
+            let hue = Math.floor(Math.random() * 360); // Random hue between 0 and 360
+            let lightness = 50 + Math.floor(Math.random() * 10); // Random lightness between 50 and 60
+            let saturation = 60 + Math.floor(Math.random() * 20); // Random saturation between 60 and 80
+
+            const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+            // Ensure the color is unique
+            while (contributorColors.includes(color)) {
+                hue = Math.floor(Math.random() * 360);
+                lightness = 50 + Math.floor(Math.random() * 10);
+                saturation = 60 + Math.floor(Math.random() * 20);
+            }
+
+            return color;
+        }
+
+        function submitContribution() {
+            const contributorName = document.getElementById('contributor-name').value;
+            let contributionAmount = document.getElementById('contribution-amount').value;
+
+            // Check if the contribution amount is greater than the remaining amount
+            if (contributorName && contributionAmount && contributionAmount > 0) {
+                contributionAmount = parseFloat(contributionAmount); // Ensure it's a number
+
+                // Check if total contribution exceeds the goal
+                if (totalContributed + contributionAmount > goalAmount) {
+                    alert(`You cannot contribute more than ₵${goalAmount - totalContributed}.`);
+                    return;
+                }
+
+                totalContributed += contributionAmount; // Add to total contributions
+
+                // Generate a unique color for the contributor
+                const contributorColor = generateUniqueColor();
+                contributorColors.push(contributorColor);
+
+                contributors.push({ name: contributorName, amount: contributionAmount });
+
+                // Update the total contribution display
+                document.getElementById('contribution-status').textContent = totalContributed.toFixed(2);
+
+                // Calculate the percentage for each contributor
+                const data = contributors.map(contributor => contributor.amount);
+                const labels = contributors.map(contributor => {
+                    const percentage = (contributor.amount / totalContributed) * 100;
+                    return `${contributor.name}: ₵${contributor.amount.toFixed(2)} (${percentage.toFixed(2)}%)`;
+                });
+                const colors = [...contributorColors];
+
+                contributionChart.data.datasets[0].data = data;
+                contributionChart.data.datasets[0].backgroundColor = colors;
+                contributionChart.data.labels = labels;
+                
+                // Re-render the chart
+                contributionChart.update();
+
+                // Update the list of contributors
+                const contributorList = document.getElementById('contributors');
+                const newContributorItem = document.createElement('li');
+                newContributorItem.classList.add('contributor-item');
+                newContributorItem.textContent = `${contributorName} contributed ₵${contributionAmount.toFixed(2)}`;
+
+                // Add "Update" button to each contributor item
+                const updateButton = document.createElement('button');
+                updateButton.textContent = 'Update Contribution';
+                updateButton.onclick = () => updateContribution(contributorName);
+                newContributorItem.appendChild(updateButton);
+
+                contributorList.appendChild(newContributorItem);
+
+                // Clear the input fields after submission
+                document.getElementById('contributor-name').value = '';
+                document.getElementById('contribution-amount').value = '';
+            } else {
+                alert('Please enter a valid name and contribution amount');
+            }
+        }
+
+        function updateContribution(contributorName) {
+            // Find the contributor to update
+            const contributor = contributors.find(contrib => contrib.name === contributorName);
+            if (contributor) {
+                const newAmount = prompt(`Enter new contribution amount for ${contributorName}:`, contributor.amount);
+                if (newAmount && !isNaN(newAmount) && newAmount > 0) {
+                    const amountDifference = parseFloat(newAmount) - contributor.amount;
+
+                    // Check if updating the contribution exceeds the goal
+                    if (totalContributed + amountDifference > goalAmount) {
+                        alert(`You cannot contribute more than ₵${goalAmount - totalContributed}.`);
+                        return;
+                    }
+
+                    // Update the total contributions and the contributor's amount
+                    totalContributed += amountDifference;
+                    contributor.amount = parseFloat(newAmount);
+
+                    // Update the total contribution display
+                    document.getElementById('contribution-status').textContent = totalContributed.toFixed(2);
+
+                    // Update the chart with new data
+                    const data = contributors.map(contributor => contributor.amount);
+                    const labels = contributors.map(contributor => {
+                        const percentage = (contributor.amount / totalContributed) * 100;
+                        return `${contributor.name}: ₵${contributor.amount.toFixed(2)} (${percentage.toFixed(2)}%)`;
+                    });
+                    contributionChart.data.datasets[0].data = data;
+                    contributionChart.data.labels = labels;
+                    contributionChart.update();
+
+                    // Update the contributor list item
+                    const contributorList = document.getElementById('contributors');
+                    const listItems = contributorList.getElementsByClassName('contributor-item');
+                    for (let item of listItems) {
+                        if (item.textContent.includes(contributorName)) {
+                            item.firstChild.textContent = `${contributorName} contributed ₵${newAmount}`;
+                        }
+                    }
+                } else {
+                    alert('Please enter a valid amount');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
